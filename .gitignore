@@ -1,0 +1,27 @@
+# Node.js
+server/node_modules/
+server/npm-debug.log*
+server/yarn-debug.log*
+server/yarn-error.log*
+server/dist/
+server/build/
+.env
+.env.local
+.env.*.local
+coverage/
+*.tgz
+.pnpm-debug.log*
+.DS_Store
+
+# Optional
+logs
+*.log
+debug/
+out/
+tmp/
+temp/
+.cache/
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project

@@ -20,7 +20,6 @@ fastify.register(require('@fastify/swagger'), {
             url: 'https://swagger.io',
             description: 'Find more info here'
         },
-        host: `${HOST}:${PORT}`,
         schemes: ['http'],
         consumes: ['application/json'],
         produces: ['application/json'],
@@ -35,15 +34,7 @@ fastify.register(require('@fastify/swagger-ui'), {
     uiConfig: {
         docExpansion: 'full',
         deepLinking: false
-    },
-    uiHooks: {
-        onRequest: function (request, reply, next) { next(); },
-        preHandler: function (request, reply, next) { next(); }
-    },
-    staticCSP: true,
-    transformStaticCSP: (header) => header,
-    transformSpecification: (swaggerObject, request, reply) => { return swaggerObject; },
-    transformSpecificationClone: true
+    }
 });
 
 // Register static files for any future web interface
@@ -62,7 +53,7 @@ fastify.register(require('@fastify/formbody'));
 fastify.register(require('./routes/printer'), { prefix: '/api' });
 
 // Health check endpoint
-fastify.get('/health', async (request, reply) => {
+fastify.get('/health', async () => {
     return { 
         status: 'ok', 
         service: 'thermal_printer_api',
@@ -72,7 +63,7 @@ fastify.get('/health', async (request, reply) => {
 });
 
 // Root endpoint
-fastify.get('/', async (request, reply) => {
+fastify.get('/', async () => {
     return {
         service: 'Thermal Printer API',
         version: '2.0.0',
