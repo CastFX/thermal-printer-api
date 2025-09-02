@@ -1,0 +1,6 @@
+{
+  "type": "EPSON",
+  "interface": "/dev/usb/lp0",
+  "width": 60,
+  "timeout": 5000
+}
