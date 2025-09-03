@@ -98,21 +98,25 @@ class PrinterManager:
                 printer.set(align="left")
 
             # Set text formatting
-            text_args: dict[str, str | int] = {}
+            format_args = {}
             if bold:
-                text_args["double_height"] = True
-                text_args["double_width"] = True
+                format_args["double_height"] = True
+                format_args["double_width"] = True
             if underline:
-                text_args["underline"] = 1
+                format_args["underline"] = 1
             if size == "large":
-                text_args["double_height"] = True
-                text_args["double_width"] = True
+                format_args["double_height"] = True
+                format_args["double_width"] = True
+            
+            # Apply formatting
+            if format_args:
+                printer.set(**format_args)
 
             # Print text
             if new_line:
-                printer.text(text + "\n", **text_args)
+                printer.text(text + "\n")
             else:
-                printer.text(text, **text_args)
+                printer.text(text)
 
             # Reset formatting
             printer.set()
