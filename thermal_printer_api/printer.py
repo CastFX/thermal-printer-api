@@ -1,5 +1,6 @@
 """Thermal printer management module."""
 
+from io import BytesIO
 from typing import Any, Dict, Optional
 
 import qrcode
@@ -164,9 +165,14 @@ class PrinterManager:
 
             # Generate QR code image
             img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Convert PIL Image to bytes for escpos
+            img_bytes = BytesIO()
+            img.save(img_bytes, format='PNG')
+            img_bytes.seek(0)
 
             # Print QR code
-            printer.image(img, impl="bitImageColumn")
+            printer.image(img_bytes, impl="bitImageColumn")
 
             # Reset alignment
             printer.set(align="left")
