@@ -10,12 +10,12 @@ class PrintTextRequest(BaseModel):
 
     text: str = Field(..., description="Text to print")
     align: Literal["left", "center", "right"] = Field(
-        default="left", description="Text alignment"
+        default="center", description="Text alignment"
     )
     bold: bool = Field(default=False, description="Bold text")
     underline: bool = Field(default=False, description="Underlined text")
     size: Literal["normal", "large"] = Field(default="normal", description="Text size")
-    cut: bool = Field(default=False, description="Cut paper after printing")
+    cut: bool = Field(default=True, description="Cut paper after printing")
     new_line: bool = Field(default=True, description="Add new line after text")
 
 
@@ -24,30 +24,32 @@ class PrintQRRequest(BaseModel):
 
     data: str = Field(..., description="Data to encode in QR code")
     align: Literal["left", "center", "right"] = Field(
-        default="left", description="QR code alignment"
+        default="center", description="QR code alignment"
     )
     cell_size: int = Field(default=3, ge=1, le=10, description="QR code cell size")
     correction: Literal["L", "M", "Q", "H"] = Field(
         default="M", description="Error correction level"
     )
     model: Literal[1, 2] = Field(default=2, description="QR code model")
-    cut: bool = Field(default=False, description="Cut paper after printing")
+    cut: bool = Field(default=True, description="Cut paper after printing")
 
 
 class PrintImageRequest(BaseModel):
     """Request model for printing images."""
 
-    image_data: str = Field(..., description="Image data as URL, base64 string, or file path")
+    image_data: str = Field(
+        ..., description="Image data as URL, base64 string, or file path"
+    )
     image_type: Literal["url", "base64", "file"] = Field(
         ..., description="Type of image data provided"
     )
     align: Literal["left", "center", "right"] = Field(
-        default="left", description="Image alignment"
+        default="center", description="Image alignment"
     )
     impl: Literal["bitImageRaster", "bitImageColumn", "graphics"] = Field(
         default="bitImageRaster", description="Image implementation method"
     )
-    cut: bool = Field(default=False, description="Cut paper after printing")
+    cut: bool = Field(default=True, description="Cut paper after printing")
 
 
 class PrintBufferRequest(BaseModel):

@@ -11,6 +11,7 @@ from .models import (
     PrintBufferRequest,
     PrinterConfigRequest,
     PrinterStatusResponse,
+    PrintImageRequest,
     PrintQRRequest,
     PrintResponse,
     PrintTextRequest,
@@ -87,6 +88,32 @@ async def print_buffer(request: PrintBufferRequest):
     """Print raw buffer to thermal printer."""
     buffer_bytes = bytes(request.buffer)
     result = await printer_manager.print_buffer(buffer_bytes)
+
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("error", "Print operation failed"),
+        )
+
+    return PrintResponse(**result)
+
+
+@router.post(
+    "/print/image",
+    response_model=PrintResponse,
+    summary="Print image",
+    description="Print image from URL, base64, or file path to thermal printer",
+    tags=["print"],
+)
+async def print_image(request: PrintImageRequest):
+    """Print image to thermal printer."""
+    result = await printer_manager.print_image(
+        image_data=request.image_data,
+        image_type=request.image_type,
+        align=request.align,
+        impl=request.impl,
+        cut=request.cut,
+    )
 
     if not result.get("success"):
         raise HTTPException(
@@ -197,6 +224,7 @@ async def api_overview():
         endpoints={
             "POST /api/print/text": "Print text",
             "POST /api/print/qr": "Print QR code",
+            "POST /api/print/image": "Print image",
             "POST /api/print/buffer": "Print raw buffer",
             "GET /api/printer/status": "Get printer status",
             "PUT /api/printer/config": "Update printer config",

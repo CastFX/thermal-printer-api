@@ -1,10 +1,13 @@
 """Thermal printer management module."""
 
+import base64
 from io import BytesIO
 from typing import Any, Dict, Optional
 
 import qrcode
+import requests
 from escpos.printer import Dummy, Network, Serial, Usb
+from PIL import Image
 
 from .config import PrinterConfig, load_printer_config
 
@@ -83,7 +86,7 @@ class PrinterManager:
         bold: bool = False,
         underline: bool = False,
         size: str = "normal",
-        cut: bool = False,
+        cut: bool = True,
         new_line: bool = True,
     ) -> Dict[str, Any]:
         """Print formatted text."""
@@ -108,7 +111,7 @@ class PrinterManager:
             if size == "large":
                 format_args["double_height"] = True
                 format_args["double_width"] = True
-            
+
             # Apply formatting
             if format_args:
                 printer.set(**format_args)
@@ -134,10 +137,10 @@ class PrinterManager:
         self,
         data: str,
         align: str = "left",
-        cell_size: int = 3,
+        cell_size: int = 8,
         correction: str = "M",
         model: int = 2,
-        cut: bool = False,
+        cut: bool = True,
     ) -> Dict[str, Any]:
         """Print QR code."""
         try:
@@ -165,10 +168,10 @@ class PrinterManager:
 
             # Generate QR code image
             img = qr.make_image(fill_color="black", back_color="white")
-            
+
             # Convert PIL Image to bytes for escpos
             img_bytes = BytesIO()
-            img.save(img_bytes, format='PNG')
+            img.save(img_bytes, format="PNG")
             img_bytes.seek(0)
 
             # Print QR code
@@ -191,5 +194,66 @@ class PrinterManager:
             printer = self._get_printer()
             printer._raw(buffer)
             return {"success": True, "message": "Print job completed successfully"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def print_image(
+        self,
+        image_data: str,
+        image_type: str,
+        align: str = "left",
+        impl: str = "bitImageRaster",
+        cut: bool = True,
+    ) -> Dict[str, Any]:
+        """Print image from URL, base64, or file path."""
+        try:
+            printer = self._get_printer()
+
+            # Set alignment
+            if align == "center":
+                printer.set(align="center")
+            elif align == "right":
+                printer.set(align="right")
+            else:
+                printer.set(align="left")
+
+            # Load image based on type
+            img = None
+            if image_type == "url":
+                response = requests.get(image_data, timeout=10)
+                response.raise_for_status()
+                img = Image.open(BytesIO(response.content))
+            elif image_type == "base64":
+                # Remove data URL prefix if present
+                if image_data.startswith("data:"):
+                    image_data = image_data.split(",", 1)[1]
+                img_data = base64.b64decode(image_data)
+                img = Image.open(BytesIO(img_data))
+            elif image_type == "file":
+                img = Image.open(image_data)
+            else:
+                return {"success": False, "error": "Invalid image_type"}
+
+            # Convert image to bytes for escpos
+            img_bytes = BytesIO()
+            img.save(img_bytes, format="PNG")
+            img_bytes.seek(0)
+
+            # Print image
+            printer.image(img_bytes, impl=impl)
+
+            # Reset alignment
+            printer.set(align="left")
+
+            if cut:
+                printer.cut()
+
+            return {"success": True, "message": "Image printed successfully"}
+
+        except requests.RequestException as e:
+            return {
+                "success": False,
+                "error": f"Failed to fetch image from URL: {str(e)}",
+            }
         except Exception as e:
             return {"success": False, "error": str(e)}
