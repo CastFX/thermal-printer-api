@@ -14,6 +14,7 @@ from .models import (
     PrintImageRequest,
     PrintQRRequest,
     PrintResponse,
+    PrintTelegramRequest,
     PrintTextRequest,
 )
 from .printer import PrinterManager
@@ -111,6 +112,35 @@ async def print_image(request: PrintImageRequest):
         image_data=request.image_data,
         image_type=request.image_type,
         align=request.align,
+        impl=request.impl,
+        cut=request.cut,
+    )
+
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("error", "Print operation failed"),
+        )
+
+    return PrintResponse(**result)
+
+
+@router.post(
+    "/print/telegram",
+    response_model=PrintResponse,
+    summary="Print Telegram message",
+    description="Print formatted Telegram message with optional image to thermal printer",
+    tags=["print"],
+)
+async def print_telegram(request: PrintTelegramRequest):
+    """Print Telegram message to thermal printer."""
+    result = await printer_manager.print_telegram(
+        sender=request.sender,
+        chat=request.chat,
+        message=request.message,
+        datetime=request.datetime,
+        image_data=request.image_data,
+        image_type=request.image_type,
         impl=request.impl,
         cut=request.cut,
     )
@@ -225,6 +255,7 @@ async def api_overview():
             "POST /api/print/text": "Print text",
             "POST /api/print/qr": "Print QR code",
             "POST /api/print/image": "Print image",
+            "POST /api/print/telegram": "Print Telegram message",
             "POST /api/print/buffer": "Print raw buffer",
             "GET /api/printer/status": "Get printer status",
             "PUT /api/printer/config": "Update printer config",

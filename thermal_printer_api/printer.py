@@ -14,11 +14,11 @@ from .config import PrinterConfig, load_printer_config
 
 def mm_to_pixels(width_mm: float, dpi: int = 203) -> int:
     """Convert millimeters to pixels using printer DPI.
-    
+
     Args:
         width_mm: Width in millimeters
         dpi: Printer DPI (dots per inch), default 203 for most thermal printers
-    
+
     Returns:
         Width in pixels
     """
@@ -65,6 +65,43 @@ class PrinterManager:
         if self._printer is None:
             self._printer = self._create_printer()
         return self._printer
+
+    def _load_image_from_source(self, image_data: str, image_type: str) -> Image.Image:
+        """Load image from URL, base64, or file path."""
+        if image_type == "url":
+            response = requests.get(image_data, timeout=10)
+            response.raise_for_status()
+            return Image.open(BytesIO(response.content))
+        elif image_type == "base64":
+            # Remove data URL prefix if present
+            if image_data.startswith("data:"):
+                image_data = image_data.split(",", 1)[1]
+            img_data = base64.b64decode(image_data)
+            return Image.open(BytesIO(img_data))
+        elif image_type == "file":
+            return Image.open(image_data)
+        else:
+            raise ValueError(f"Invalid image_type: {image_type}")
+
+    def _process_image_for_printing(self, img: Image.Image) -> BytesIO:
+        """Process image for thermal printer: scale, convert to grayscale, and prepare bytes."""
+        # Scale image to fit printer paper width from config
+        max_width = mm_to_pixels(self.config.paper_width_mm)
+        if img.width > max_width:
+            # Calculate new height maintaining aspect ratio
+            aspect_ratio = img.height / img.width
+            new_height = int(max_width * aspect_ratio)
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+
+        # Convert to grayscale for better thermal printing
+        if img.mode != "L":
+            img = img.convert("L")
+
+        # Convert image to bytes for escpos
+        img_bytes = BytesIO()
+        img.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+        return img_bytes
 
     async def check_connection(self) -> bool:
         """Check if printer is connected and accessible."""
@@ -184,10 +221,8 @@ class PrinterManager:
             # Generate QR code image
             img = qr.make_image(fill_color="black", back_color="white")
 
-            # Convert PIL Image to bytes for escpos
-            img_bytes = BytesIO()
-            img.save(img_bytes, format="PNG")
-            img_bytes.seek(0)
+            # Process image for printing
+            img_bytes = self._process_image_for_printing(img)
 
             # Print QR code
             printer.image(img_bytes, impl="bitImageColumn")
@@ -232,39 +267,9 @@ class PrinterManager:
             else:
                 printer.set(align="left")
 
-            # Load image based on type
-            img = None
-            if image_type == "url":
-                response = requests.get(image_data, timeout=10)
-                response.raise_for_status()
-                img = Image.open(BytesIO(response.content))
-            elif image_type == "base64":
-                # Remove data URL prefix if present
-                if image_data.startswith("data:"):
-                    image_data = image_data.split(",", 1)[1]
-                img_data = base64.b64decode(image_data)
-                img = Image.open(BytesIO(img_data))
-            elif image_type == "file":
-                img = Image.open(image_data)
-            else:
-                return {"success": False, "error": "Invalid image_type"}
-
-            # Scale image to fit printer paper width from config
-            max_width = mm_to_pixels(self.config.paper_width_mm)
-            if img.width > max_width:
-                # Calculate new height maintaining aspect ratio
-                aspect_ratio = img.height / img.width
-                new_height = int(max_width * aspect_ratio)
-                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
-            
-            # Convert to grayscale for better thermal printing
-            if img.mode != 'L':
-                img = img.convert('L')
-
-            # Convert image to bytes for escpos
-            img_bytes = BytesIO()
-            img.save(img_bytes, format="PNG")
-            img_bytes.seek(0)
+            # Load and process image
+            img = self._load_image_from_source(image_data, image_type)
+            img_bytes = self._process_image_for_printing(img)
 
             # Print image
             printer.image(img_bytes, impl=impl)
@@ -276,6 +281,58 @@ class PrinterManager:
                 printer.cut()
 
             return {"success": True, "message": "Image printed successfully"}
+
+        except requests.RequestException as e:
+            return {
+                "success": False,
+                "error": f"Failed to fetch image from URL: {str(e)}",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def print_telegram(
+        self,
+        sender: str,
+        chat: str,
+        message: str,
+        datetime: str,
+        image_data: Optional[str] = None,
+        image_type: Optional[str] = None,
+        impl: str = "bitImageColumn",
+        cut: bool = True,
+    ) -> Dict[str, Any]:
+        """Print formatted Telegram message."""
+        try:
+            printer = self._get_printer()
+
+            # Print header info (Chat and Sender) aligned left
+            printer.set(align="left")
+            printer.text(f"Chat: {chat}\n")
+            printer.text(f"Sender: {sender}\n")
+            printer.text("\n")  # Add spacing
+
+            # Print message content centered
+            printer.set(align="center")
+            printer.text(f"{message}\n")
+
+            # Print image if provided
+            if image_data and image_type:
+                printer.text("\n")  # Add spacing before image
+
+                # Load and process image
+                img = self._load_image_from_source(image_data, image_type)
+                img_bytes = self._process_image_for_printing(img)
+
+                # Print image
+                printer.image(img_bytes, impl=impl)
+
+            # Reset alignment and cut if requested
+            printer.set(align="left")
+
+            if cut:
+                printer.cut()
+
+            return {"success": True, "message": "Telegram message printed successfully"}
 
         except requests.RequestException as e:
             return {

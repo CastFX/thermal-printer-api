@@ -52,6 +52,25 @@ class PrintImageRequest(BaseModel):
     cut: bool = Field(default=True, description="Cut paper after printing")
 
 
+class PrintTelegramRequest(BaseModel):
+    """Request model for printing Telegram messages."""
+
+    sender: str = Field(..., description="Telegram sender username")
+    chat: str = Field(..., description="Telegram chat title")
+    message: str = Field(..., description="Message content")
+    datetime: str = Field(..., description="Message datetime in ISO format")
+    image_data: Optional[str] = Field(
+        None, description="Optional image data as URL, base64, or file path"
+    )
+    image_type: Optional[Literal["url", "base64", "file"]] = Field(
+        None, description="Type of image data provided"
+    )
+    impl: Literal["bitImageRaster", "bitImageColumn", "graphics"] = Field(
+        default="bitImageColumn", description="Image implementation method"
+    )
+    cut: bool = Field(default=True, description="Cut paper after printing")
+
+
 class PrintBufferRequest(BaseModel):
     """Request model for printing raw buffer."""
 
