@@ -13,6 +13,7 @@ class PrinterConfig(BaseModel):
     type: str = "EPSON"
     interface: str = "/dev/usb/lp0"
     width: int = 60
+    paper_width_mm: float = 80.0
     timeout: int = 5000
     idVendor: int = 0x0FE6
     idProduct: int = 0x811E

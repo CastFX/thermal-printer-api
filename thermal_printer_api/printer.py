@@ -12,6 +12,21 @@ from PIL import Image
 from .config import PrinterConfig, load_printer_config
 
 
+def mm_to_pixels(width_mm: float, dpi: int = 203) -> int:
+    """Convert millimeters to pixels using printer DPI.
+    
+    Args:
+        width_mm: Width in millimeters
+        dpi: Printer DPI (dots per inch), default 203 for most thermal printers
+    
+    Returns:
+        Width in pixels
+    """
+    # Convert mm to inches, then to pixels
+    width_inches = width_mm / 25.4  # 25.4 mm per inch
+    return int(width_inches * dpi)
+
+
 class PrinterManager:
     """Manages thermal printer operations."""
 
@@ -233,6 +248,18 @@ class PrinterManager:
                 img = Image.open(image_data)
             else:
                 return {"success": False, "error": "Invalid image_type"}
+
+            # Scale image to fit printer paper width from config
+            max_width = mm_to_pixels(self.config.paper_width_mm)
+            if img.width > max_width:
+                # Calculate new height maintaining aspect ratio
+                aspect_ratio = img.height / img.width
+                new_height = int(max_width * aspect_ratio)
+                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Convert to grayscale for better thermal printing
+            if img.mode != 'L':
+                img = img.convert('L')
 
             # Convert image to bytes for escpos
             img_bytes = BytesIO()

@@ -6,5 +6,6 @@
   "idVendor": "0x0FE6",
   "idProduct": "0x811E",
   "in_ep": "0x82",
-  "out_ep": "0x02"
+  "out_ep": "0x02",
+  "paper_width_mm": 80.0
 }

@@ -66,6 +66,9 @@ class PrinterConfigRequest(BaseModel):
     width: int = Field(
         default=60, ge=20, le=80, description="Print width in characters"
     )
+    paper_width_mm: float = Field(
+        default=58.0, ge=30.0, le=120.0, description="Paper width in millimeters"
+    )
     timeout: int = Field(
         default=5000, ge=1000, le=30000, description="Timeout in milliseconds"
     )
