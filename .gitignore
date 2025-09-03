@@ -13,10 +13,10 @@ coverage/
 .pnpm-debug.log*
 .DS_Store
 
-# Optional
-logs
-*.log
-debug/
+# Python
+*.pyc
+__pycache__/
+
 out/
 tmp/
 temp/

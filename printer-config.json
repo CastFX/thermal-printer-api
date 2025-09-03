@@ -1,0 +1,10 @@
+{
+  "type": "EPSON",
+  "interface": "/dev/usb/lp0",
+  "width": 60,
+  "timeout": 0,
+  "idVendor": "0x0FE6",
+  "idProduct": "0x811E",
+  "in_ep": "0x82",
+  "out_ep": "0x02"
+}

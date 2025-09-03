@@ -8,7 +8,23 @@ Thermal Printer API (v2) is a standalone REST API server for managing thermal pr
 
 ## Development Commands
 
-### Server Operations
+### Python Server Operations
+```bash
+# Development (with auto-reload)
+uv run python dev.py
+
+# Production
+uv run python main.py
+
+# Alternative using scripts
+uv run thermal-printer-api-dev  # Development
+uv run thermal-printer-api      # Production
+
+# Install dependencies
+uv sync
+```
+
+### Legacy Node.js Server Operations (deprecated)
 ```bash
 # Development (with auto-reload)
 cd server && npm run dev
@@ -38,6 +54,31 @@ curl -X POST http://localhost:3000/api/print/text \
 
 ### Core Components
 
+**Main Server (`thermal_printer_api/main.py`)**
+- FastAPI-based HTTP server on port 3000 (configurable)
+- OpenAPI/Swagger documentation at `/docs`
+- Health check endpoint at `/health`
+- Graceful shutdown handling with Uvicorn
+
+**Printer Management (`thermal_printer_api/printer.py`)**
+- Core printer operations using `python-escpos`
+- Configuration management via Pydantic models
+- Support for text, QR codes, and raw buffer printing
+- Printer status monitoring and connection testing
+
+**API Routes (`thermal_printer_api/routes.py`)**
+- REST endpoints for all printer operations
+- Request validation using Pydantic models
+- Automatic OpenAPI schema generation
+- Type-safe error handling
+
+**Configuration (`thermal_printer_api/config.py`)**
+- Pydantic-based configuration management
+- Environment variable support
+- JSON file persistence for printer settings
+
+### Legacy Components (Node.js - deprecated)
+
 **Main Server (`server/index.js`)**
 - Fastify-based HTTP server on port 3000 (configurable)
 - Swagger/OpenAPI documentation at `/docs`
@@ -57,7 +98,7 @@ curl -X POST http://localhost:3000/api/print/text \
 
 ### Configuration System
 
-**Printer Configuration (`server/printer-config.json`)**
+**Printer Configuration (`printer-config.json`)**
 ```json
 {
   "type": "EPSON",
@@ -70,7 +111,7 @@ curl -X POST http://localhost:3000/api/print/text \
 **Environment Variables**
 - `PORT` - Server port (default: 3000)
 - `HOST` - Server host (default: 0.0.0.0)
-- `LOG_LEVEL` - Fastify logging level
+- `LOG_LEVEL` - Uvicorn logging level (default: info)
 
 ## API Endpoints
 
@@ -89,14 +130,25 @@ curl -X POST http://localhost:3000/api/print/text \
 - `GET /docs` - Interactive API documentation
 - `GET /` - API overview
 
-## Key Differences from v1
+## Key Features in Python v2
 
-- **Removed**: Pusher WebSocket integration
-- **Removed**: Wi-Fi configuration interface
-- **Removed**: Bash scripts and system integration
-- **Added**: REST API with Swagger documentation
-- **Added**: JSON-based configuration
-- **Simplified**: Pure Node.js application, no external services
+- **Modern Stack**: FastAPI with automatic OpenAPI documentation generation
+- **Type Safety**: Pydantic models for request/response validation
+- **Async Support**: Full async/await support for better performance
+- **Environment Config**: Pydantic-settings for configuration management
+- **Cross-platform**: Python-escpos library supports multiple printer interfaces
+- **Development Tools**: UV for fast dependency management
+- **Testing Ready**: Built-in support for pytest and async testing
+
+## Key Differences from Node.js v1
+
+- **Language**: Migrated from Node.js to Python 3.9+
+- **Framework**: Changed from Fastify to FastAPI
+- **Printer Library**: Changed from `node-thermal-printer` to `python-escpos`
+- **Package Manager**: Using UV instead of npm
+- **Configuration**: Pydantic models instead of plain JSON validation
+- **Type System**: Full type hints and validation throughout
+- **Maintained Features**: All original REST API endpoints and functionality
 
 ## Supported Hardware
 
@@ -108,6 +160,16 @@ curl -X POST http://localhost:3000/api/print/text \
 
 ## Development Notes
 
+### Python Version
+- Uses FastAPI for high-performance HTTP server with automatic documentation
+- OpenAPI/Swagger UI provides interactive API testing at `/docs`
+- All printer operations return consistent JSON responses with Pydantic models
+- Configuration changes are applied immediately (no server restart required)
+- No database or persistent storage required
+- Full async support for better performance
+- Type hints throughout for better IDE support and error catching
+
+### Legacy Node.js Version (deprecated)
 - Uses Fastify for high-performance HTTP server
 - Swagger UI provides interactive API testing
 - All printer operations return consistent JSON responses
